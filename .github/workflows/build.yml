@@ -1,0 +1,27 @@
+name: Build Desktop App
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Dependencies & Build EXE
+        run: |
+          npm install
+          npm run build
+
+      - name: Upload Artifacts (.exe file)
+        uses: actions/upload-artifact@v3
+        with:
+          name: embroidery-setup-exe
+          path: dist/*.exe
