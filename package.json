@@ -1,0 +1,15 @@
+{
+  "name": "pro-embroidery-studio",
+  "version": "1.0.0",
+  "description": "Pro Embroidery & Sketch Studio Desktop App",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "author": "Aapka Naam",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.0"
+  }
+}

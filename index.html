@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pro Embroidery & Sketch Studio - Advanced</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+    body { display: flex; flex-direction: column; align-items: center; background-color: #f0f2f5; padding: 10px; }
+
+    /* Top Menu Bar */
+    .menu-bar {
+      display: flex; gap: 5px; width: 100%; max-width: 850px;
+      background: #2c3e50; padding: 8px 15px; border-radius: 8px 8px 0 0;
+      color: white; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .menu-item {
+      position: relative; cursor: pointer; padding: 5px 12px; font-size: 14px; font-weight: 600; border-radius: 4px;
+    }
+    .menu-item:hover { background: #34495e; }
+    .dropdown {
+      display: none; position: absolute; top: 100%; left: 0; background: white; color: #333;
+      min-width: 150px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-radius: 4px; z-index: 100; overflow: hidden;
+    }
+    .menu-item:hover .dropdown { display: block; }
+    .dropdown div { padding: 10px 15px; font-size: 13px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
+    .dropdown div:hover { background: #f7f3ed; color: #8e44ad; font-weight: bold; }
+
+    /* Workspace Panel */
+    .workspace {
+      display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 850px;
+      background: white; padding: 15px 20px; border-radius: 0 0 12px 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08); margin-bottom: 15px;
+    }
+    .controls-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%;
+    }
+    @media (max-width: 650px) { .controls-grid { grid-template-columns: 1fr; } }
+
+    .control-box {
+      background: #faf9f6; padding: 10px; border: 1px solid #e2dedb; border-radius: 8px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .control-box label { font-size: 13px; font-weight: bold; color: #444; }
+
+    button.primary-btn {
+      padding: 9px 14px; background-color: #8e44ad; color: white;
+      border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px;
+    }
+    button.primary-btn:hover { background-color: #732d91; }
+    button.edit-btn { background-color: #e67e22; }
+    button.edit-btn:hover { background-color: #d35400; }
+
+    /* Advanced Toolbar (Zoom, Size, Mirror, Stitch Type) */
+    .toolbar {
+      display: flex; gap: 10px; align-items: center; background: #ffffff;
+      padding: 10px 15px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      margin-bottom: 15px; flex-wrap: wrap; justify-content: center; border: 1px solid #eee; max-width: 850px;
+    }
+    .tool-group { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: bold; }
+    input[type="color"] { border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; }
+    
+    button.tool-btn {
+      padding: 6px 12px; border: none; border-radius: 15px; background-color: #3498db;
+      color: white; font-weight: bold; cursor: pointer; font-size: 12px;
+    }
+    button.tool-btn:hover { background-color: #2980b9; }
+    button.secondary { background-color: #e74c3c; }
+    button.active { background-color: #2ecc71 !important; }
+
+    select { padding: 5px; border-radius: 6px; border: 1px solid #ccc; font-size: 12px; font-weight: bold; }
+
+    #canvas-container {
+      position: relative; box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+      border-radius: 8px; overflow: auto; background: #ffffff; margin: 0 auto; max-width: 850px; max-height: 550px;
+    }
+    canvas { display: block; cursor: crosshair; transform-origin: top left; transition: transform 0.1s ease; }
+
+    #loading {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.8); color: white; padding: 12px 24px;
+      border-radius: 8px; display: none; font-weight: bold; font-size: 14px; z-index: 200;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Menu Bar -->
+  <div class="menu-bar">
+    <div style="font-weight: bold; margin-right: 15px; color: #f39c12;">🎨 ProStudio Advanced</div>
+    <div class="menu-item">
+      File
+      <div class="dropdown">
+        <div id="menuNew">📄 New File</div>
+        <div id="menuSave">💾 Save Design</div>
+      </div>
+    </div>
+    <div class="menu-item" id="menuClear">Edit (Clear)</div>
+    <div class="menu-item" id="menuGuide">View (Toggle Guide)</div>
+  </div>
+
+  <!-- Workspace Panel -->
+  <div class="workspace">
+    <div class="controls-grid">
+      <!-- Box 1: AI Generate -->
+      <div class="control-box">
+        <label>⚡ AI Generate Sketch:</label>
+        <div style="display: flex; gap: 6px;">
+          <input type="text" id="aiCommand" placeholder="Jaise: Peacock border..." style="flex:1; padding:7px; border:1px solid #ccc; border-radius:4px; font-size:13px;">
+          <button id="generateBtn" class="primary-btn">Generate</button>
+        </div>
+      </div>
+
+      <!-- Box 2: Reference Image Upload & Canvas Size -->
+      <div class="control-box">
+        <label>📁 Reference Image & Size:</label>
+        <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+          <input type="file" id="refImageInput" accept="image/*" style="font-size: 11px; width: 140px;">
+          <div style="display: flex; gap: 4px; font-size: 11px; align-items: center;">
+            W:<input type="number" id="canvasWidthInput" value="750" style="width: 50px; padding: 2px;"> 
+            H:<input type="number" id="canvasHeightInput" value="500" style="width: 50px; padding: 2px;">
+            <button id="resizeBtn" style="padding: 2px 6px; font-size: 11px; background: #34495e; color:white; border:none; border-radius:3px; cursor:pointer;">Set</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Box 3: AI Edit Command -->
+    <div style="display: flex; gap: 8px; width: 100%; border-top: 1px dashed #dcdde1; padding-top: 8px; align-items: center;">
+      <input type="text" id="aiEditCommand" placeholder="AI Edit Command (Jaise: Make flowers bigger, Add leaves)..." style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+      <button id="editBtn" class="primary-btn edit-btn">✨ Apply AI Edit</button>
+    </div>
+  </div>
+
+  <!-- Advanced Editing Toolbar (Zoom, Mirror, Stitch Type) -->
+  <div class="toolbar">
+    <div class="tool-group">
+      <label>Thread:</label>
+      <input type="color" id="colorPicker" value="#8e44ad">
+    </div>
+
+    <div class="tool-group">
+      <label>Size:</label>
+      <input type="range" id="brushSize" min="1" max="15" value="3">
+      <span id="sizeValue">3px</span>
+    </div>
+
+    <div class="tool-group">
+      <label>Stitch:</label>
+      <select id="stitchType">
+        <option value="solid">Running Stitch</option>
+        <option value="dashed">Satin/Dashed Stitch</option>
+      </select>
+    </div>
+
+    <button id="brushBtn" class="tool-btn active">✏️ Pen</button>
+    <button id="eraserBtn" class="tool-btn">🧼 Eraser</button>
+    <button id="mirrorBtn" class="tool-btn" style="background-color: #8e44ad;">🪞 Mirror: OFF</button>
+    
+    <!-- Zoom Controls -->
+    <div class="tool-group" style="border-left: 2px solid #ddd; padding-left: 8px;">
+      <button id="zoomInBtn" class="tool-btn" style="background-color: #16a085;">🔍+</button>
+      <span id="zoomLevel" style="font-size: 12px;">100%</span>
+      <button id="zoomOutBtn" class="tool-btn" style="background-color: #16a085;">🔍-</button>
+    </div>
+
+    <button id="toggleGuideBtn" class="tool-btn secondary" style="background-color: #d35400;">🎽 Guide</button>
+    <button id="saveBtn" class="tool-btn" style="background-color: #27ae60;">💾 Save</button>
+  </div>
+
+  <div id="canvas-container">
+    <div id="loading">AI Processing...</div>
+    <canvas id="sketchCanvas" width="750" height="500"></canvas>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('sketchCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const aiCommand = document.getElementById('aiCommand');
+    const generateBtn = document.getElementById('generateBtn');
+    const refImageInput = document.getElementById('refImageInput');
+    const canvasWidthInput = document.getElementById('canvasWidthInput');
+    const canvasHeightInput = document.getElementById('canvasHeightInput');
+    const resizeBtn = document.getElementById('resizeBtn');
+
+    const aiEditCommand = document.getElementById('aiEditCommand');
+    const editBtn = document.getElementById('editBtn');
+
+    const colorPicker = document.getElementById('colorPicker');
+    const brushSize = document.getElementById('brushSize');
+    const sizeValue = document.getElementById('sizeValue');
+    const stitchTypeSelect = document.getElementById('stitchType');
+
+    const brushBtn = document.getElementById('brushBtn');
+    const eraserBtn = document.getElementById('eraserBtn');
+    const mirrorBtn = document.getElementById('mirrorBtn');
+    const zoomInBtn = document.getElementById('zoomInBtn');
+    const zoomOutBtn = document.getElementById('zoomOutBtn');
+    const zoomLevelText = document.getElementById('zoomLevel');
+
+    const toggleGuideBtn = document.getElementById('toggleGuideBtn');
+    const saveBtn = document.getElementById('saveBtn');
+    const loading = document.getElementById('loading');
+
+    const menuNew = document.getElementById('menuNew');
+    const menuSave = document.getElementById('menuSave');
+    const menuClear = document.getElementById('menuClear');
+    const menuGuide = document.getElementById('menuGuide');
+
+    let isDrawing = false;
+    let isEraser = false;
+    let isMirrorOn = false;
+    let showGuide = true;
+    let currentZoom = 1;
+    let currentColor = '#8e44ad';
+    let currentSize = 3;
+    let currentStitch = 'solid';
+    let uploadedImageObj = null;
+    let strokes = [];
+    let currentStroke = [];
+
+    redrawCanvas();
+
+    // Resize Canvas Dimension
+    resizeBtn.addEventListener('click', () => {
+      const w = parseInt(canvasWidthInput.value);
+      const h = parseInt(canvasHeightInput.value);
+      if (w > 200 && h > 200) {
+        canvas.width = w;
+        canvas.height = h;
+        redrawCanvas();
+        alert(`Canvas size successfully ${w}x${h}px set ho gaya hai!`);
+      } else {
+        alert('Kripya kam se kam 200px ya usse bada size dalein.');
+      }
+    });
+
+    // Zoom Controls
+    zoomInBtn.addEventListener('click', () => {
+      if (currentZoom < 2.5) {
+        currentZoom += 0.25;
+        canvas.style.transform = `scale(${currentZoom})`;
+        zoomLevelText.textContent = `${Math.round(currentZoom * 100)}%`;
+      }
+    });
+
+    zoomOutBtn.addEventListener('click', () => {
+      if (currentZoom > 0.5) {
+        currentZoom -= 0.25;
+        canvas.style.transform = `scale(${currentZoom})`;
+        zoomLevelText.textContent = `${Math.round(currentZoom * 100)}%`;
+      }
+    });
+
+    // Mirror Toggle
+    mirrorBtn.addEventListener('click', () => {
+      isMirrorOn = !isMirrorOn;
+      mirrorBtn.style.backgroundColor = isMirrorOn ? '#27ae60' : '#8e44ad';
+      mirrorBtn.textContent = isMirrorOn ? '🪞 Mirror: ON' : '🪞 Mirror: OFF';
+    });
+
+    function drawNecklineGuide() {
+      if (!showGuide) return;
+      ctx.save();
+      ctx.strokeStyle = '#bdc3c7';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+
+      ctx.beginPath();
+      ctx.moveTo(canvas.width / 2, 0);
+      ctx.lineTo(canvas.width / 2, canvas.height);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(canvas.width / 2 - 90, 20);
+      ctx.quadraticCurveTo(canvas.width / 2, 70, canvas.width / 2 + 90, 20);
+      ctx.lineTo(canvas.width / 2 + 50, 200);
+      ctx.quadraticCurveTo(canvas.width / 2, 230, canvas.width / 2 - 50, 200);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function redrawCanvas() {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      if (uploadedImageObj) {
+        ctx.globalAlpha = 0.3;
+        ctx.drawImage(uploadedImageObj, 50, 50, canvas.width - 100, canvas.height - 100);
+        ctx.globalAlpha = 1.0;
+      }
+
+      drawNecklineGuide();
+
+      strokes.forEach(stroke => {
+        if (stroke.points.length < 2) return;
+        ctx.save();
+        ctx.beginPath();
+        ctx.lineWidth = stroke.size;
+        ctx.strokeStyle = stroke.color;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        if (stroke.stitch === 'dashed') {
+          ctx.setLineDash([6, 4]);
+        } else {
+          ctx.setLineDash([]);
+        }
+
+        ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+        for (let i = 1; i < stroke.points.length; i++) {
+          ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+        }
+        ctx.stroke();
+        ctx.restore();
+      });
+    }
+
+    refImageInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const img = new Image();
+          img.onload = function() {
+            uploadedImageObj = img;
+            redrawCanvas();
+            alert('Reference image background mein set ho gayi hai!');
+          }
+          img.src = event.target.result;
+        }
+        reader.readAsDataURL(file);
+      }
+    });
+
+    menuNew.addEventListener('click', () => {
+      if (confirm('Nayi file banayein?')) { strokes = []; uploadedImageObj = null; refImageInput.value = ''; redrawCanvas(); }
+    });
+
+    function saveDesignFile() {
+      const tempGuide = showGuide; showGuide = false; redrawCanvas();
+      const link = document.createElement('a');
+      link.download = 'embroidery-advanced-design.png';
+      link.href = canvas.toDataURL();
+      link.click();
+      showGuide = tempGuide; redrawCanvas();
+    }
+
+    menuSave.addEventListener('click', saveDesignFile);
+    saveBtn.addEventListener('click', saveDesignFile);
+    menuClear.addEventListener('click', () => { if (confirm('Clear karein?')) { strokes = []; redrawCanvas(); } });
+    menuGuide.addEventListener('click', () => { showGuide = !showGuide; redrawCanvas(); });
+    toggleGuideBtn.addEventListener('click', () => { showGuide = !showGuide; redrawCanvas(); });
+
+    generateBtn.addEventListener('click', () => {
+      const text = aiCommand.value.toLowerCase().trim();
+      if (!text) { alert('Kripya generate command likhein!'); return; }
+      loading.style.display = 'block';
+
+      setTimeout(() => {
+        loading.style.display = 'none';
+        let generatedPoints = [];
+        const centerX = canvas.width / 2;
+        if (text.includes('peacock') || text.includes('mor')) {
+          for(let i=0; i<Math.PI*2; i+=0.1) {
+            let x = centerX + Math.cos(i)*110;
+            let y = 250 + Math.sin(i)*110;
+            generatedPoints.push({x, y});
+          }
+        } else {
+          for(let x=100; x < canvas.width - 100; x+=5) {
+            let y = 250 + Math.sin(x * 0.03) * 50;
+            generatedPoints.push({x, y});
+          }
+        }
+        if(generatedPoints.length > 0) {
+          strokes.push({ color: currentColor, size: currentSize, stitch: currentStitch, points: generatedPoints });
+        }
+        redrawCanvas();
+      }, 700);
+    });
+
+    editBtn.addEventListener('click', () => {
+      const editText = aiEditCommand.value.toLowerCase().trim();
+      if (!editText) { alert('Kripya edit command likhein!'); return; }
+      loading.style.display = 'block';
+
+      setTimeout(() => {
+        loading.style.display = 'none';
+        let editPoints = [];
+        for(let x=120; x < canvas.width - 120; x+=10) {
+          let y = 320 + Math.cos(x * 0.05) * 30;
+          editPoints.push({x, y});
+        }
+        if(editPoints.length > 0) {
+          strokes.push({ color: '#e67e22', size: currentSize + 1, stitch: currentStitch, points: editPoints });
+        }
+        redrawCanvas();
+        alert(`AI Edit Applied: "${aiEditCommand.value}" successfully jodh diya gaya hai!`);
+        aiEditCommand.value = '';
+      }, 700);
+    });
+
+    colorPicker.addEventListener('change', (e) => currentColor = e.target.value);
+    brushSize.addEventListener('input', (e) => { currentSize = e.target.value; sizeValue.textContent = `${currentSize}px`; });
+    stitchTypeSelect.addEventListener('change', (e) => currentStitch = e.target.value);
+
+    brushBtn.addEventListener('click', () => { isEraser = false; brushBtn.classList.add('active'); eraserBtn.classList.remove('active'); });
+    eraserBtn.addEventListener('click', () => { isEraser = true; eraserBtn.classList.add('active'); brushBtn.classList.remove('active'); });
+
+    function startDrawing(e) {
+      isDrawing = true;
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / currentZoom;
+      const y = (e.clientY - rect.top) / currentZoom;
+      
+      currentStroke = { 
+        color: isEraser ? '#ffffff' : currentColor, 
+        size: isEraser ? currentSize * 4 : currentSize, 
+        stitch: currentStitch,
+        points: [{ x, y }] 
+      };
+      strokes.push(currentStroke);
+
+      if (isMirrorOn) {
+        const centerX = canvas.width / 2;
+        const mirroredX = centerX + (centerX - x);
+        currentStroke.mirrorPoints = [{ x: mirroredX, y }];
+      }
+    }
+
+    function stopDrawing() { isDrawing = false; }
+
+    function draw(e) {
+      if (!isDrawing) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / currentZoom;
+      const y = (e.clientY - rect.top) / currentZoom;
+
+      currentStroke.points.push({ x, y });
+
+      if (isMirrorOn) {
+        const centerX = canvas.width / 2;
+        const mirroredX = centerX + (centerX - x);
+        if(!currentStroke.mirrorPoints) currentStroke.mirrorPoints = [];
+        currentStroke.mirrorPoints.push({ x: mirroredX, y });
+      }
+
+      redrawCanvas();
+
+      if (isMirrorOn && currentStroke.mirrorPoints && currentStroke.mirrorPoints.length >= 2) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.lineWidth = currentStroke.size;
+        ctx.strokeStyle = currentStroke.color;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        if (currentStroke.stitch === 'dashed') ctx.setLineDash([6, 4]);
+        
+        ctx.moveTo(currentStroke.mirrorPoints[0].x, currentStroke.mirrorPoints[0].y);
+        for (let i = 1; i < currentStroke.mirrorPoints.length; i++) {
+          ctx.lineTo(currentStroke.mirrorPoints[i].x, currentStroke.mirrorPoints[i].y);
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseleave', stopDrawing);
+  </script>
+
+</body>
+</html>
